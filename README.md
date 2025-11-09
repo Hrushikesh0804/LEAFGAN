@@ -1,70 +1,158 @@
-# Getting Started with Create React App
+# LeafGAN: An Effective Data Augmentation Method for Practical Plant Disease Diagnosis
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+LeafGAN is a GAN-based image-to-image translation framework designed to improve the robustness and generalization of automated plant disease diagnosis systems. Unlike vanilla CycleGAN, LeafGAN focuses exclusively on transforming the **leaf regions** while preserving real-world backgrounds, resulting in more realistic synthesized disease images and significantly enhanced classifier performance on unseen environments.
 
-## Available Scripts
+This repository summarizes the concepts, methodology, experiments, and findings based on the LeafGAN research.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Overview
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Plant disease diagnosis models often suffer from overfitting due to:
+- Limited disease images  
+- Imbalanced datasets  
+- Lack of background diversity  
+- Small and subtle disease features  
+- Bias introduced by laboratory-like image settings  
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+LeafGAN addresses these issues by generating realistic diseased leaf images from healthy ones. The method integrates a novel label-free segmentation module (LFLSeg) to detect leaf regions and guide the GAN to transform only the relevant pixels. This results in highly natural disease augmentations that improve classifier robustness.
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Key Features
 
-### `npm run build`
+### Leaf-Focused Translation
+CycleGAN-type models tend to alter both the leaf and the background. LeafGAN fixes this with:
+- Mask-guided adversarial training  
+- Background-similarity loss  
+- Weakly supervised segmentation masks  
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Label-Free Leaf Segmentation (LFLSeg)
+LFLSeg is built on a fine-tuned ResNet-101 classifier that distinguishes:
+- Full leaf  
+- Partial leaf  
+- Non-leaf  
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Using Grad-CAM, it generates segmentation masks without requiring pixel-level labels.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Improved Diagnostic Performance
+Testing on an unseen dataset showed:
+- Baseline accuracy: **71.3 percent**
+- Baseline + CycleGAN augmentation: **72.0 percent**
+- Baseline + LeafGAN augmentation: **78.7 percent**
 
-### `npm run eject`
+This demonstrates a **7.4 percent improvement** in generalization using LeafGAN-generated images.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Architecture
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+LeafGAN extends CycleGAN with three major components:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 1. LFLSeg Module
+Produces soft leaf masks using weakly supervised learning and Grad-CAM heatmaps.
 
-## Learn More
+### 2. LeafGAN Translation Network
+Includes:
+- Two generators (healthy→disease and disease→healthy)  
+- Two discriminators  
+- Mask-guided adversarial loss  
+- Cycle-consistency loss  
+- Background similarity loss  
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The masks ensure that only leaf regions are transformed during training.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 3. Disease Classification Pipeline
+Three classification models are used for evaluation:
+- Baseline  
+- Baseline + CycleGAN-generated images  
+- Baseline + LeafGAN-generated images  
 
-### Code Splitting
+All classifiers are fine-tuned from ResNet-101.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## Dataset
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The authors collected cucumber leaf images from multiple farms in Japan (2015–2019).  
+Two datasets were used:
 
-### Making a Progressive Web App
+### Dataset A (Training + Validation)
+Contains healthy leaves and three disease classes:
+- MYSV  
+- Brown spot  
+- Powdery mildew  
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Dataset B (Unseen Test Set)
+Captured under different conditions to evaluate practical performance.
 
-### Advanced Configuration
+Dataset characteristics:
+- Images contain single leaves  
+- Natural, diverse backgrounds  
+- Variations in lighting, color, and leaf health stage  
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## Experimental Summary
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Segmentation Performance
+- LFLSeg classification accuracy: **99.8 percent**
+- F1-score for segmentation: **83.9 percent** (no pixel mask supervision)
 
-### `npm run build` fails to minify
+### Image Generation Quality
+LeafGAN:
+- Preserves real backgrounds  
+- Adds disease symptoms only on leaf regions  
+- Produces highly realistic augmentations  
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+CycleGAN:
+- Alters entire image  
+- Produces less plausible disease images  
+
+### Classification Results on Unseen Dataset B
+
+| Model | Average Accuracy |
+|-------|------------------|
+| Baseline | 71.3 percent |
+| Baseline + CycleGAN | 72.0 percent |
+| Baseline + LeafGAN | **78.7 percent** |
+
+---
+
+## Limitations
+
+While LeafGAN greatly improves data diversity, some limitations remain:
+- LFLSeg struggles with images containing multiple overlapping leaves  
+- Some disease types (e.g., powdery mildew) may be transformed as color changes rather than clear symptoms due to limited dataset variation  
+- Scale and camera-distance variation may affect mask quality  
+
+Future improvements may include:
+- More robust segmentation models  
+- Disease-specific transformation controls  
+- Multi-leaf image handling  
+
+---
+
+## Conclusion
+
+LeafGAN is a practical and effective data augmentation tool for plant disease diagnosis systems.  
+By focusing transformations exclusively on the leaf areas and preserving diverse backgrounds, it:
+- Generates realistic disease images  
+- Significantly improves classifier generalization  
+- Reduces dependency on expensive labeled datasets  
+
+LeafGAN represents a strong step forward for reliable machine learning in agriculture.
+
+---
+
+## Citation
+
+If you use or reference this work, please cite the original authors:
+
+
+---
+
+## Acknowledgment
+
+This research was partially supported by the Ministry of Education, Culture, Science and Technology of Japan (Grant-in-Aid for Fundamental Research Program C, 17K8033, 2017–2020).
+
