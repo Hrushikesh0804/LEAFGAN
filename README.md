@@ -145,14 +145,3 @@ LeafGAN represents a strong step forward for reliable machine learning in agricu
 
 ---
 
-## Citation
-
-If you use or reference this work, please cite the original authors:
-
-
----
-
-## Acknowledgment
-
-This research was partially supported by the Ministry of Education, Culture, Science and Technology of Japan (Grant-in-Aid for Fundamental Research Program C, 17K8033, 2017–2020).
-
